@@ -119,28 +119,52 @@ function createMcpServer() {
     "ping_me",
     {
       title: "Ping Me",
-      description: "Send a Pushover notification to the configured user.",
+      description:
+        "Send a Pushover notification to the configured human user. This tool is meant for an AI assistant or automation to proactively notify the user about something that matters outside the chat itself, such as task completion, a failure, a blocked workflow, an important alert, or a request for attention. In most cases, set a terse `title` plus a clear `message`, and leave everything else unset. Keep both short, specific, and immediately useful. Prefer normal priority for ordinary updates. Use `device` only when intentionally targeting one device. Use `url` and `url_title` only when the notification should link somewhere helpful. Use `sound` only when overriding the user's normal default is important. Use priority `1` only when the notification should break through quiet hours. Emergency priority is intentionally not supported by this tool.",
       inputSchema: {
-        message: z.string().min(1).max(1024).describe("Notification body."),
-        title: z.string().max(250).optional().describe("Notification title."),
-        device: z.string().max(25).optional().describe("Optional device name."),
-        url: z.string().url().optional().describe("Optional supplementary URL."),
-        url_title: z.string().max(100).optional().describe("Optional title for the URL."),
-        sound: z.string().max(30).optional().describe("Optional Pushover sound."),
-        priority: z
-          .union([z.literal(-2), z.literal(-1), z.literal(0), z.literal(1), z.literal(2)])
+        message: z
+          .string()
+          .min(1)
+          .max(1024)
+          .describe("The notification text. Keep it short, specific, and immediately useful."),
+        title: z
+          .string()
+          .min(1)
+          .max(250)
+          .describe("A required terse title. Use a short label like a source, task name, status, or alert type so the user can scan it quickly."),
+        device: z
+          .string()
+          .max(25)
           .optional()
-          .describe("Pushover priority."),
-        ttl: z.number().int().positive().optional().describe("Optional time-to-live in seconds."),
-        retry: z.number().int().min(30).optional().describe("Required for emergency priority."),
-        expire: z.number().int().min(30).max(10800).optional().describe("Required for emergency priority."),
+          .describe("Pushover device name. Usually leave this unset so the notification goes to all active devices. Set it only when you intentionally want a single device."),
+        url: z
+          .string()
+          .url()
+          .optional()
+          .describe("Supplementary URL shown with the notification. Usually leave this unset unless the message should link to a page, dashboard, incident, or document."),
+        url_title: z
+          .string()
+          .max(100)
+          .optional()
+          .describe("Label for `url`. Use this only when `url` is set. In most cases a short action label like 'Open incident' or 'View dashboard' is best."),
+        sound: z
+          .string()
+          .max(30)
+          .optional()
+          .describe("Pushover sound override. Usually leave this unset and let your account default handle it. Set it only when a specific notification sound matters."),
+        priority: z
+          .union([z.literal(-2), z.literal(-1), z.literal(0), z.literal(1)])
+          .optional()
+          .describe("Pushover priority. In most cases, omit this or use `0` for normal priority. Use `-1` or `-2` for quieter notifications, and `1` for important alerts that should bypass quiet hours."),
+        ttl: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Time-to-live in seconds. Usually leave this unset. Set it only when the notification becomes irrelevant after a fixed amount of time and should disappear automatically."),
       },
     },
     async (input) => {
-      if (input.priority === 2 && (!input.retry || !input.expire)) {
-        throw new Error("priority=2 requires both retry and expire.");
-      }
-
       const resolved = {
         title: input.title ?? optionalString(PUSHOVER_DEFAULT_TITLE),
         device: input.device ?? optionalString(PUSHOVER_DEFAULT_DEVICE),
@@ -154,10 +178,6 @@ function createMcpServer() {
           input.ttl ??
           optionalInt(PUSHOVER_DEFAULT_TTL, "PUSHOVER_DEFAULT_TTL"),
       };
-
-      if (resolved.priority === 2 && (!input.retry || !input.expire)) {
-        throw new Error("priority=2 requires both retry and expire.");
-      }
 
       const payload = new URLSearchParams({
         token: PUSHOVER_APP_TOKEN,
@@ -173,8 +193,6 @@ function createMcpServer() {
         sound: resolved.sound,
         priority: resolved.priority,
         ttl: resolved.ttl,
-        retry: input.retry,
-        expire: input.expire,
       })) {
         if (value !== undefined) {
           payload.set(key, String(value));
