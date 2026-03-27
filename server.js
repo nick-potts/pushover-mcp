@@ -297,7 +297,12 @@ class PersonalOAuthProvider {
   }
 
   async exchangeRefreshToken(client, refreshToken, scopes, resource) {
-    const claims = verifySignedValue(refreshToken, "refresh");
+    let claims;
+    try {
+      claims = verifySignedValue(refreshToken, "refresh");
+    } catch {
+      throw new InvalidGrantError("Refresh token is invalid.");
+    }
     const now = nowInSeconds();
 
     if (claims.exp <= now) {
@@ -415,14 +420,28 @@ function parseAllowedRedirectUris(value) {
     : [
         "https://claude.ai/api/mcp/auth_callback",
         "https://claude.com/api/mcp/auth_callback",
+        "https://chat.openai.com/aip/*/oauth/callback",
+        "https://chatgpt.com/aip/*/oauth/callback",
       ];
 
-  return new Set(configured);
+  return configured;
+}
+
+function redirectUriAllowed(redirectUri) {
+  return OAUTH_ALLOWED_REDIRECT_URIS.some((pattern) => {
+    if (pattern.includes("*")) {
+      const escaped = pattern.replaceAll(/[.+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`^${escaped.replaceAll("\\*", "[^/]+")}$`);
+      return regex.test(redirectUri);
+    }
+
+    return pattern === redirectUri;
+  });
 }
 
 function validateRedirectUris(redirectUris) {
   for (const redirectUri of redirectUris) {
-    if (!OAUTH_ALLOWED_REDIRECT_URIS.has(redirectUri)) {
+    if (!redirectUriAllowed(redirectUri)) {
       throw new InvalidClientMetadataError(
         `Unapproved redirect_uri: ${redirectUri}`,
       );
@@ -479,7 +498,11 @@ function verifySignedValue(token, expectedKind) {
     throw new InvalidTokenError("Token signature is invalid.");
   }
 
-  return JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  try {
+    return JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  } catch {
+    throw new InvalidTokenError("Token payload is invalid.");
+  }
 }
 
 function normalizeRequestedResource(resource) {
@@ -671,7 +694,7 @@ const authMiddleware = requireBearerAuth({
 
 const app = express();
 
-app.set("trust proxy", true);
+app.set("trust proxy", 1);
 app.use(express.json({ limit: MAX_BODY_SIZE_BYTES }));
 app.use(express.urlencoded({ extended: false, limit: "32kb" }));
 

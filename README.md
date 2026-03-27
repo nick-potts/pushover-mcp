@@ -31,10 +31,12 @@ It exposes a single stateless MCP endpoint and an OAuth flow that works with Cla
 - `PUSHOVER_DEFAULT_PRIORITY`
 - `PUSHOVER_DEFAULT_TTL`
 
-By default, dynamic client registration only accepts Claude callback URLs:
+By default, dynamic client registration accepts Claude callback URLs plus ChatGPT-style OpenAI callback patterns:
 
 - `https://claude.ai/api/mcp/auth_callback`
 - `https://claude.com/api/mcp/auth_callback`
+- `https://chat.openai.com/aip/*/oauth/callback`
+- `https://chatgpt.com/aip/*/oauth/callback`
 
 If you want to test locally with a different callback, set `OAUTH_ALLOWED_REDIRECT_URIS` to a comma-separated allowlist.
 
