@@ -101,6 +101,12 @@ class StatelessClaudeClientsStore {
   }
 
   async registerClient(client) {
+    console.log("[oauth] registerClient request", {
+      client_name: client.client_name ?? null,
+      redirect_uris: client.redirect_uris,
+      token_endpoint_auth_method: client.token_endpoint_auth_method ?? null,
+    });
+
     validateRedirectUris(client.redirect_uris);
 
     const clientIdIssuedAt = nowInSeconds();
@@ -441,7 +447,27 @@ function redirectUriAllowed(redirectUri) {
 
 function validateRedirectUris(redirectUris) {
   for (const redirectUri of redirectUris) {
+    const matchedPattern =
+      OAUTH_ALLOWED_REDIRECT_URIS.find((pattern) => {
+        if (pattern.includes("*")) {
+          const escaped = pattern.replaceAll(/[.+?^${}()|[\]\\]/g, "\\$&");
+          const regex = new RegExp(`^${escaped.replaceAll("*", "[^/]+")}$`);
+          return regex.test(redirectUri);
+        }
+
+        return pattern === redirectUri;
+      }) ?? null;
+
+    console.log("[oauth] validate redirect_uri", {
+      redirect_uri: redirectUri,
+      matched_pattern: matchedPattern,
+      allowed_patterns: OAUTH_ALLOWED_REDIRECT_URIS,
+    });
+
     if (!redirectUriAllowed(redirectUri)) {
+      console.warn("[oauth] rejecting redirect_uri", {
+        redirect_uri: redirectUri,
+      });
       throw new InvalidClientMetadataError(
         `Unapproved redirect_uri: ${redirectUri}`,
       );
@@ -802,6 +828,11 @@ app.use((_req, res) => {
 
 const httpServer = app.listen(PORT, HOST, () => {
   console.log(`pushover-mcp listening on ${HOST}:${PORT}${MCP_PATH}`);
+  console.log("[oauth] startup", {
+    issuer: PUBLIC_BASE_URL.href,
+    resource: RESOURCE_SERVER_URL.href,
+    allowed_redirect_uris: OAUTH_ALLOWED_REDIRECT_URIS,
+  });
 });
 
 httpServer.keepAliveTimeout = 5_000;
