@@ -37,6 +37,8 @@ By default, dynamic client registration accepts Claude callback URLs plus ChatGP
 - `https://claude.com/api/mcp/auth_callback`
 - `https://chat.openai.com/aip/*/oauth/callback`
 - `https://chatgpt.com/aip/*/oauth/callback`
+- `https://chat.openai.com/connector/oauth/*`
+- `https://chatgpt.com/connector/oauth/*`
 
 If you want to test locally with a different callback, set `OAUTH_ALLOWED_REDIRECT_URIS` to a comma-separated allowlist.
 

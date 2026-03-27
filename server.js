@@ -428,6 +428,8 @@ function parseAllowedRedirectUris(value) {
         "https://claude.com/api/mcp/auth_callback",
         "https://chat.openai.com/aip/*/oauth/callback",
         "https://chatgpt.com/aip/*/oauth/callback",
+        "https://chat.openai.com/connector/oauth/*",
+        "https://chatgpt.com/connector/oauth/*",
       ];
 
   return configured;
