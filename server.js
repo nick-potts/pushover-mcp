@@ -431,7 +431,7 @@ function redirectUriAllowed(redirectUri) {
   return OAUTH_ALLOWED_REDIRECT_URIS.some((pattern) => {
     if (pattern.includes("*")) {
       const escaped = pattern.replaceAll(/[.+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(`^${escaped.replaceAll("\\*", "[^/]+")}$`);
+      const regex = new RegExp(`^${escaped.replaceAll("*", "[^/]+")}$`);
       return regex.test(redirectUri);
     }
 
