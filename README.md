@@ -1,25 +1,29 @@
 # pushover-mcp
 
-Minimal stateless MCP server for sending yourself Pushover notifications.
+Minimal remote MCP server for sending yourself Pushover notifications.
 
-It runs as plain Node on a single HTTP endpoint, so Railway can just start it with `npm start`.
+It exposes a single stateless MCP endpoint and an OAuth flow that works with Claude.ai custom connectors.
 
-## Env
+## Required env
 
-Required:
-
+- `PUBLIC_BASE_URL`
 - `PUSHOVER_APP_TOKEN`
 - `PUSHOVER_USER_KEY`
+- `OAUTH_SIGNING_SECRET`
+- `OAUTH_APPROVAL_TOKEN`
 
-Optional:
+## Useful env
 
-- `MCP_AUTH_TOKEN`
-- `HOST`
 - `PORT`
+- `HOST`
 - `MCP_PATH`
 - `HEALTH_PATH`
 - `MAX_BODY_SIZE_BYTES`
-- `PUSHOVER_DEFAULT_TITLE`
+- `OAUTH_ALLOWED_REDIRECT_URIS`
+- `OAUTH_ACCESS_TOKEN_TTL_SECONDS`
+- `OAUTH_REFRESH_TOKEN_TTL_SECONDS`
+- `OAUTH_CODE_TTL_SECONDS`
+- `OAUTH_PENDING_AUTH_TTL_SECONDS`
 - `PUSHOVER_DEFAULT_DEVICE`
 - `PUSHOVER_DEFAULT_URL`
 - `PUSHOVER_DEFAULT_URL_TITLE`
@@ -27,24 +31,25 @@ Optional:
 - `PUSHOVER_DEFAULT_PRIORITY`
 - `PUSHOVER_DEFAULT_TTL`
 
+By default, dynamic client registration only accepts Claude callback URLs:
+
+- `https://claude.ai/api/mcp/auth_callback`
+- `https://claude.com/api/mcp/auth_callback`
+
+If you want to test locally with a different callback, set `OAUTH_ALLOWED_REDIRECT_URIS` to a comma-separated allowlist.
+
+For local HTTP testing only, set `MCP_DANGEROUSLY_ALLOW_INSECURE_ISSUER_URL=1`.
+
 ## Tool
 
-`ping_me`
+`ping_me` requires:
 
-Inputs:
-
-- `message` required
 - `title`
-- `device`
-- `url`
-- `url_title`
-- `sound`
-- `priority`
-- `ttl`
-- `retry`
-- `expire`
+- `message`
 
-If `priority=2`, you must also send `retry` and `expire`.
+It also accepts `device`, `url`, `url_title`, `sound`, `priority`, and `ttl`.
+
+Emergency priority is intentionally disabled.
 
 ## Run
 
